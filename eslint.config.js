@@ -10,7 +10,6 @@ export default defineConfig([
     'dist/**',
     'coverage/**',
     'node_modules/**',
-    'apm_modules/**',
     '.cursor/**',
     '.devcontainer/**',
     '.github/**',

@@ -1,8 +1,5 @@
 .dccache
 
-# APM dependencies
-apm_modules/
-
 # Logs
 logs
 *.log
@@ -88,6 +85,3 @@ typings/
 
 # Visual Studio Code
 .vscode/
-
-# Snyk
-.dccache
