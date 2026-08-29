@@ -1,17 +1,13 @@
-import { test, describe, beforeEach, mock } from 'node:test'
-import assert from 'node:assert'
-import { add } from '../src/main.ts'
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import {
+  collectCitationReport,
+  loadPaperlensConfig,
+  renderCitationTable
+} from '../src/main.js'
 
-describe('CLI program', () => {
-
-  beforeEach(() => {
-    // Reset the mocks before each test
-    mock.reset()
-  });
-
-  test('Program sums two arguments', async (t) => {
-    const result = await add(1, 1);
-    assert.strictEqual(result, 2);
-  })
-
-});
+test('exports the citation MVP library API', () => {
+  assert.equal(typeof loadPaperlensConfig, 'function')
+  assert.equal(typeof collectCitationReport, 'function')
+  assert.equal(typeof renderCitationTable, 'function')
+})

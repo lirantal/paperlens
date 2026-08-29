@@ -1,12 +1,6 @@
 #!/usr/bin/env node
-import { debuglog } from 'node:util'
-import { add } from '../main.ts'
+import { runCli } from '../cli.js'
 
-const debug = debuglog('paperlens')
-
-async function init () {
-  const sum = await add(1, 2)
-  debug(sum.toString())
-}
-
-init()
+void runCli(process.argv.slice(2)).then((exitCode) => {
+  process.exitCode = exitCode
+})
