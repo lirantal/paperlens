@@ -12,15 +12,35 @@ const originalEnvironment = {
   openAlexMailto: process.env.OPENALEX_MAILTO
 }
 
+const restoreEnvironmentVariable = (name: string, value: string | undefined) => {
+  if (value === undefined) {
+    delete process.env[name]
+    return
+  }
+  process.env[name] = value
+}
+
 const jsonResponse = (body: unknown) => new Response(JSON.stringify(body), {
   headers: { 'content-type': 'application/json' }
 })
 
 afterEach(() => {
   globalThis.fetch = originalFetch
-  process.env.SEMANTIC_SCHOLAR_API_KEY = originalEnvironment.semanticScholarApiKey
-  process.env.OPENALEX_API_KEY = originalEnvironment.openAlexApiKey
-  process.env.OPENALEX_MAILTO = originalEnvironment.openAlexMailto
+  restoreEnvironmentVariable('SEMANTIC_SCHOLAR_API_KEY', originalEnvironment.semanticScholarApiKey)
+  restoreEnvironmentVariable('OPENALEX_API_KEY', originalEnvironment.openAlexApiKey)
+  restoreEnvironmentVariable('OPENALEX_MAILTO', originalEnvironment.openAlexMailto)
+})
+
+test('restores absent provider environment variables', () => {
+  for (const environmentVariable of [
+    'SEMANTIC_SCHOLAR_API_KEY',
+    'OPENALEX_API_KEY',
+    'OPENALEX_MAILTO'
+  ]) {
+    process.env[environmentVariable] = 'temporary-value'
+    restoreEnvironmentVariable(environmentVariable, undefined)
+    assert.equal(process.env[environmentVariable], undefined)
+  }
 })
 
 test('prints help without reading config', async () => {
