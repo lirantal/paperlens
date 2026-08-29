@@ -1,0 +1,9 @@
+name: "paperlens"
+version: 1.0.0
+description: "capture, track, and analyze academic paper citations"
+author: "Liran Tal"
+dependencies:
+  apm:
+    - lirantal/nodejs-cli-apps-best-practices/skills/nodejs-cli-best-practices
+  mcp: []
+scripts: {}
