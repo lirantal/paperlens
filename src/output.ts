@@ -3,6 +3,9 @@ import type { CitationReport, ProviderCitationResult } from './types.js'
 const headers = ['Paper', 'arXiv ID', 'Semantic Scholar', 'OpenAlex', 'Estimate']
 const unavailable = 'unavailable'
 
+const sanitizeCell = (cell: string): string =>
+  cell.replace(/\|/g, '¦').replace(/\r?\n|\r/g, ' ')
+
 const providerCount = (result: ProviderCitationResult): string =>
   result.ok ? String(result.citationCount) : unavailable
 
@@ -14,7 +17,7 @@ const border = (widths: readonly number[]): string =>
 
 export function renderCitationTable(report: CitationReport): string {
   const rows = report.rows.map((row) => [
-    row.paper.title,
+    sanitizeCell(row.paper.title),
     row.paper.arxivId,
     providerCount(row.semanticScholar),
     providerCount(row.openAlex),

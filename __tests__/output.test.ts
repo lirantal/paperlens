@@ -37,6 +37,17 @@ test('renders a stable table with counts and unavailable values', () => {
   assert.equal((output.match(/unavailable/g) ?? []).length, 3)
   assert.doesNotMatch(output, /2026-08-29|HTTP 503|timeout|\u001b\[/)
 
+  const lines = output.split('\n')
+  assert.equal(lines.length, 6)
+  assert.equal(new Set(lines.map((line) => line.length)).size, 1)
+  assert.deepEqual(lines[1]?.split('|').slice(1, -1).map((cell) => cell.trim()), [
+    'Paper', 'arXiv ID', 'Semantic Scholar', 'OpenAlex', 'Estimate'
+  ])
+  assert.ok(lines.every((line, index) => {
+    const isBorder = index === 0 || index === 2 || index === 5
+    return isBorder ? line.startsWith('+-') : line.split('|').length === 7
+  }))
+
   assert.equal(output, renderCitationTable(JSON.parse(JSON.stringify(report))))
 })
 
@@ -58,4 +69,20 @@ test('uses fixed-width pipe-separated rows for every report row', () => {
   assert.ok(lines[3]?.startsWith('| ') && lines[3]?.endsWith(' |'))
   assert.ok(lines[0]?.startsWith('+-'))
   assert.ok(lines[4]?.startsWith('+-'))
+})
+
+test('sanitizes pipe and line-break characters in paper titles', () => {
+  const output = renderCitationTable({
+    generatedAt: 'ignored',
+    rows: [{
+      paper: { id: 'paper', title: 'Title|with\r\nline\rbreak', arxivId: '1' },
+      semanticScholar: { source: 'semanticScholar', fetchedAt: 'ignored', ok: true, citationCount: 3 },
+      openAlex: { source: 'openAlex', fetchedAt: 'ignored', ok: true, citationCount: 4 },
+      citationCountEstimate: 4
+    }]
+  })
+
+  assert.equal(output.split('\n').length, 5)
+  assert.match(output, /Title¦with line break/)
+  assert.doesNotMatch(output, /Title\|with/)
 })
