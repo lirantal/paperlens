@@ -93,9 +93,10 @@ test('starts both provider requests before either gated request is released', as
   let firstRequestTimedOut = false
   let releasedBySecondRequest = false
   let releaseFirstRequest!: (response: Response) => void
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined
   const firstRequest = new Promise<Response>((resolve, reject) => {
     releaseFirstRequest = resolve
-    setTimeout(() => {
+    timeoutHandle = setTimeout(() => {
       firstRequestTimedOut = true
       reject(new Error('second provider request did not start'))
     }, 100)
@@ -106,6 +107,8 @@ test('starts both provider requests before either gated request is released', as
     if (url.includes('semanticscholar')) return firstRequest
 
     if (!firstRequestTimedOut) releasedBySecondRequest = true
+    clearTimeout(timeoutHandle)
+    timeoutHandle = undefined
     releaseFirstRequest(jsonResponse({ citationCount: 7 }))
     return jsonResponse({ cited_by_count: 11 })
   }
@@ -122,9 +125,14 @@ test('starts both provider requests before either gated request is released', as
 test('waits for the default delay between papers without real-time sleep', async () => {
   test.mock.timers.enable({ apis: ['setTimeout'] })
   try {
-    globalThis.fetch = async (input) => String(input).includes('semanticscholar')
-      ? jsonResponse({ citationCount: 7 })
-      : jsonResponse({ cited_by_count: 11 })
+    let secondPaperStarted = false
+    globalThis.fetch = async (input) => {
+      const url = String(input)
+      if (url.includes('1706.03763')) secondPaperStarted = true
+      return url.includes('semanticscholar')
+        ? jsonResponse({ citationCount: 7 })
+        : jsonResponse({ cited_by_count: 11 })
+    }
 
     const collection = collectCitationReport([
       { id: 'paper-one', title: 'Paper One', arxivId: '1706.03762' },
@@ -132,7 +140,14 @@ test('waits for the default delay between papers without real-time sleep', async
     ])
 
     for (let i = 0; i < 10; i += 1) await Promise.resolve()
-    test.mock.timers.tick(1_100)
+    test.mock.timers.tick(1_099)
+    await Promise.resolve()
+    assert.equal(secondPaperStarted, false)
+
+    test.mock.timers.tick(1)
+    await Promise.resolve()
+    await Promise.resolve()
+    assert.equal(secondPaperStarted, true)
     const report = await collection
 
     assert.equal(report.rows.length, 2)
