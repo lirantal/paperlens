@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import { renderCitationTable } from '../src/output.js'
+
+test('renders a stable table with counts and unavailable values', () => {
+  const report = {
+    generatedAt: '2026-08-29T00:00:00.000Z',
+    rows: [
+      {
+        paper: { id: 'paper-one', title: 'Paper One', arxivId: '1706.03762' },
+        semanticScholar: { source: 'semanticScholar' as const, fetchedAt: 'now', ok: true as const, citationCount: 7 },
+        openAlex: { source: 'openAlex' as const, fetchedAt: 'now', ok: true as const, citationCount: 11 },
+        citationCountEstimate: 11
+      },
+      {
+        paper: { id: 'paper-two', title: 'Paper Two', arxivId: '1810.04805' },
+        semanticScholar: { source: 'semanticScholar' as const, fetchedAt: 'later', ok: false as const, error: 'HTTP 503' },
+        openAlex: { source: 'openAlex' as const, fetchedAt: 'later', ok: false as const, error: 'timeout' },
+        citationCountEstimate: null
+      }
+    ]
+  }
+
+  const output = renderCitationTable(report)
+
+  assert.match(output, /Paper\s+\|/)
+  assert.match(output, /arXiv ID/)
+  assert.match(output, /Semantic Scholar/)
+  assert.match(output, /OpenAlex/)
+  assert.match(output, /Estimate/)
+  assert.match(output, /Paper One/)
+  assert.match(output, /Paper Two/)
+  assert.match(output, /1706\.03762/)
+  assert.match(output, /1810\.04805/)
+  assert.match(output, /\| 7 /)
+  assert.match(output, /\| 11 /)
+  assert.equal((output.match(/unavailable/g) ?? []).length, 3)
+  assert.doesNotMatch(output, /2026-08-29|HTTP 503|timeout|\u001b\[/)
+
+  assert.equal(output, renderCitationTable(JSON.parse(JSON.stringify(report))))
+})
+
+test('uses fixed-width pipe-separated rows for every report row', () => {
+  const output = renderCitationTable({
+    generatedAt: 'ignored',
+    rows: [{
+      paper: { id: 'paper', title: 'A longer paper title', arxivId: '1' },
+      semanticScholar: { source: 'semanticScholar', fetchedAt: 'ignored', ok: true, citationCount: 3 },
+      openAlex: { source: 'openAlex', fetchedAt: 'ignored', ok: false, error: 'ignored' },
+      citationCountEstimate: 3
+    }]
+  })
+  const lines = output.split('\n')
+
+  assert.equal(lines.length, 5)
+  assert.equal(new Set(lines.map((line) => line.length)).size, 1)
+  assert.ok(lines[1]?.startsWith('| ') && lines[1]?.endsWith(' |'))
+  assert.ok(lines[3]?.startsWith('| ') && lines[3]?.endsWith(' |'))
+  assert.ok(lines[0]?.startsWith('+-'))
+  assert.ok(lines[4]?.startsWith('+-'))
+})
