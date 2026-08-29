@@ -90,7 +90,7 @@ If any of the above doesn't work on a fresh checkout, that's a bug, please open 
 
 ### Environment setup
 
-Before making changes, use the project's devcontainer when possible so local tools, dependencies, and environment hooks match the expected setup. AI coding agents running from the host should follow the portless SSH workflow in [`.devcontainer/README.md`](.devcontainer/README.md#coding-agents-over-ssh) to start or reuse the devcontainer, configure the SSH alias, and select the mounted repository folder.
+Use Node.js 24 and pnpm, then follow the documented [local development setup](docs/development.md#setup). Automated agents should use the same setup and commands described there.
 
 ### Release readiness
 

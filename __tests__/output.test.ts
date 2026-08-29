@@ -2,6 +2,16 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { renderCitationTable } from '../src/output.js'
 
+const unsafeCellCharacter = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/u
+
+const assertStableSafeTable = (output: string, expectedLineCount: number): void => {
+  const lines = output.split('\n')
+
+  assert.equal(lines.length, expectedLineCount)
+  assert.equal(new Set(lines.map((line) => line.length)).size, 1)
+  assert.ok(lines.every((line) => !unsafeCellCharacter.test(line)))
+}
+
 test('renders a stable table with counts and unavailable values', () => {
   const report = {
     generatedAt: '2026-08-29T00:00:00.000Z',
@@ -71,18 +81,43 @@ test('uses fixed-width pipe-separated rows for every report row', () => {
   assert.ok(lines[4]?.startsWith('+-'))
 })
 
-test('sanitizes pipe and line-break characters in paper titles', () => {
+test('sanitizes delimiters, C0 controls, and ANSI-like escapes in paper titles', () => {
   const output = renderCitationTable({
     generatedAt: 'ignored',
     rows: [{
-      paper: { id: 'paper', title: 'Title|with\r\nline\rbreak', arxivId: '1' },
+      paper: {
+        id: 'paper',
+        title: 'Title|with\r\nline\rbreak\tand\bmore\f\u001b[31mred\u001b[0m',
+        arxivId: '1'
+      },
       semanticScholar: { source: 'semanticScholar', fetchedAt: 'ignored', ok: true, citationCount: 3 },
       openAlex: { source: 'openAlex', fetchedAt: 'ignored', ok: true, citationCount: 4 },
       citationCountEstimate: 4
     }]
   })
 
-  assert.equal(output.split('\n').length, 5)
-  assert.match(output, /Title¦with line break/)
+  assertStableSafeTable(output, 5)
+  assert.match(output, /Title¦with  line break and more  \[31mred \[0m/)
   assert.doesNotMatch(output, /Title\|with/)
+})
+
+test('sanitizes C1 controls and Unicode line separators in direct report input', () => {
+  const output = renderCitationTable({
+    generatedAt: 'ignored',
+    rows: [{
+      paper: {
+        id: 'paper',
+        title: 'Direct\u0085title\u009bvalue\u2028next\u2029last',
+        arxivId: '1706|\u0085\u009b\u2028\u2029.03762'
+      },
+      semanticScholar: { source: 'semanticScholar', fetchedAt: 'ignored', ok: true, citationCount: 3 },
+      openAlex: { source: 'openAlex', fetchedAt: 'ignored', ok: true, citationCount: 4 },
+      citationCountEstimate: 4
+    }]
+  })
+
+  assertStableSafeTable(output, 5)
+  assert.match(output, /Direct title value next last/)
+  assert.match(output, /1706¦    \.03762/)
+  assert.equal(output.split('\n')[3]?.split('|').length, 7)
 })

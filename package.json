@@ -1,6 +1,7 @@
 {
   "name": "paperlens",
   "version": "0.0.1",
+  "packageManager": "pnpm@10.26.0",
   "description": "capture, track, and analyze academic paper citations",
   "types": "dist/main.d.mts",
   "type": "module",
@@ -18,11 +19,6 @@
         "default": "./dist/main.cjs"
       },
       "default": "./dist/main.mjs"
-    },
-    "./dist/*": {
-      "types": "./dist/*.d.mts",
-      "import": "./dist/*.mjs",
-      "require": "./dist/*.cjs"
     }
   },
   "engines": {
@@ -30,9 +26,7 @@
     "pnpm": ">=10.26.0"
   },
   "files": [
-    "dist",
-    "src",
-    "bin"
+    "dist"
   ],
   "scripts": {
     "start": "tsx src/bin/cli.ts",

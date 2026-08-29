@@ -27,13 +27,14 @@ pnpm add paperlens
 ## Usage: CLI
 
 ```sh
-paperlens --config paperlens.json
+pnpm exec paperlens --config paperlens.json
 ```
 
-Running `paperlens` without arguments reads `paperlens.json` from the current
-working directory. Use `-c` as an alias for `--config`. Provider API keys are
-optional environment variables; when a provider cannot be reached, paperlens
-shows it as unavailable instead of reporting its citation count as zero.
+`pnpm exec` runs the locally installed `paperlens` binary. Running it without
+arguments reads `paperlens.json` from the current working directory. Use `-c`
+as an alias for `--config`. Provider API keys are optional environment
+variables; when a provider cannot be reached, paperlens shows it as unavailable
+instead of reporting its citation count as zero.
 
 See the [documentation](docs/README.md) for development, testing, architecture,
 and project conventions.
