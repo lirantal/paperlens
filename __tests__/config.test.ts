@@ -83,7 +83,7 @@ test('rejects duplicate paper IDs', async () => {
     ]
   })
 
-  await assert.rejects(loadPaperlensConfig(configPath), /Config validation failed.*unique|duplicate.*id/i)
+  await assert.rejects(loadPaperlensConfig(configPath), /Config validation failed.*(?:unique|duplicate).*id/i)
 })
 
 test('rejects unknown paper metadata in the MVP config', async () => {
@@ -91,7 +91,7 @@ test('rejects unknown paper metadata in the MVP config', async () => {
     papers: [{ id: 'paper-one', title: 'Paper One', arxivId: '1706.03762', blogUrl: 'https://example.com' }]
   })
 
-  await assert.rejects(loadPaperlensConfig(configPath), /Config validation failed.*unknown|blogUrl/i)
+  await assert.rejects(loadPaperlensConfig(configPath), /Config validation failed.*unknown.*blogUrl/i)
 })
 
 test('rejects unknown root fields', async () => {
@@ -100,7 +100,7 @@ test('rejects unknown root fields', async () => {
     version: 1
   })
 
-  await assert.rejects(loadPaperlensConfig(configPath), /Config validation failed.*unknown|version/i)
+  await assert.rejects(loadPaperlensConfig(configPath), /Config validation failed.*unknown.*version/i)
 })
 
 test('rejects missing, empty, or incorrectly typed paper fields', async () => {
