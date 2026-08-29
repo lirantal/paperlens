@@ -1,4 +1,4 @@
-import { setTimeout as delay } from 'node:timers/promises'
+import timers from 'node:timers/promises'
 import type { CitationReport, CitationRow, CollectCitationOptions, Paper, ProviderCitationResult } from './types.js'
 import { fetchOpenAlexCitations } from './providers/openAlex.js'
 import { fetchSemanticScholarCitations } from './providers/semanticScholar.js'
@@ -30,7 +30,7 @@ export async function collectCitationReport (
     })
 
     if (index < papers.length - 1) {
-      await delay(options.delayBetweenPapersMs ?? 1_100)
+      await timers.setTimeout(options.delayBetweenPapersMs ?? 1_100)
     }
   }
 

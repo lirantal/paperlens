@@ -4,10 +4,10 @@ import { collectCitationReport } from '../src/collect.js'
 
 const originalFetch = globalThis.fetch
 
-const jsonResponse = (body: unknown, status = 200) =>
+const jsonResponse = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json' }
+    headers: { 'content-type': 'application/json', ...headers }
   })
 
 afterEach(() => {
@@ -36,7 +36,7 @@ test('uses the successful provider count when the other provider fails', async (
   globalThis.fetch = async (input) => {
     const url = String(input)
     return url.includes('semanticscholar')
-      ? jsonResponse({}, 503)
+      ? jsonResponse({}, 503, { 'retry-after': '0' })
       : jsonResponse({ cited_by_count: 7 })
   }
 
@@ -50,8 +50,34 @@ test('uses the successful provider count when the other provider fails', async (
   assert.equal(report.rows[0]?.openAlex.ok, true)
 })
 
+test('preserves raw provider results on the returned row', async () => {
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    return url.includes('semanticscholar')
+      ? jsonResponse({ citationCount: 7 })
+      : jsonResponse({}, 503, { 'retry-after': '0' })
+  }
+
+  const report = await collectCitationReport(
+    [{ id: 'paper-one', title: 'Paper One', arxivId: '1706.03762' }],
+    { delayBetweenPapersMs: 0 }
+  )
+  const row = report.rows[0]
+
+  assert.ok(row)
+  assert.equal(row.semanticScholar.source, 'semanticScholar')
+  assert.equal(row.semanticScholar.ok && row.semanticScholar.citationCount, 7)
+  assert.match(row.semanticScholar.fetchedAt, /^\d{4}-\d{2}-\d{2}T/)
+  assert.equal(row.openAlex.source, 'openAlex')
+  assert.equal(row.openAlex.ok, false)
+  if (!row.openAlex.ok) {
+    assert.match(row.openAlex.error, /503/)
+    assert.match(row.openAlex.fetchedAt, /^\d{4}-\d{2}-\d{2}T/)
+  }
+})
+
 test('uses null when both providers fail', async () => {
-  globalThis.fetch = async () => jsonResponse({}, 503)
+  globalThis.fetch = async () => jsonResponse({}, 503, { 'retry-after': '0' })
 
   const report = await collectCitationReport(
     [{ id: 'paper-one', title: 'Paper One', arxivId: '1706.03762' }],
@@ -63,26 +89,54 @@ test('uses null when both providers fail', async () => {
   assert.equal(report.rows[0]?.openAlex.ok, false)
 })
 
-test('waits between papers while processing papers sequentially', async () => {
-  const requestedPaperIds: string[] = []
+test('starts both provider requests before either gated request is released', async () => {
+  let firstRequestTimedOut = false
+  let releasedBySecondRequest = false
+  let releaseFirstRequest!: (response: Response) => void
+  const firstRequest = new Promise<Response>((resolve, reject) => {
+    releaseFirstRequest = resolve
+    setTimeout(() => {
+      firstRequestTimedOut = true
+      reject(new Error('second provider request did not start'))
+    }, 100)
+  })
+
   globalThis.fetch = async (input) => {
     const url = String(input)
-    requestedPaperIds.push(url.includes('1706.03762') ? 'paper-one' : 'paper-two')
-    return url.includes('semanticscholar')
-      ? jsonResponse({ citationCount: 7 })
-      : jsonResponse({ cited_by_count: 11 })
+    if (url.includes('semanticscholar')) return firstRequest
+
+    if (!firstRequestTimedOut) releasedBySecondRequest = true
+    releaseFirstRequest(jsonResponse({ citationCount: 7 }))
+    return jsonResponse({ cited_by_count: 11 })
   }
 
-  const startedAt = Date.now()
   const report = await collectCitationReport(
-    [
-      { id: 'paper-one', title: 'Paper One', arxivId: '1706.03762' },
-      { id: 'paper-two', title: 'Paper Two', arxivId: '1706.03763' }
-    ],
-    { delayBetweenPapersMs: 20 }
+    [{ id: 'paper-one', title: 'Paper One', arxivId: '1706.03762' }],
+    { delayBetweenPapersMs: 0 }
   )
 
-  assert.equal(report.rows.length, 2)
-  assert.ok(Date.now() - startedAt >= 20)
-  assert.deepEqual(requestedPaperIds.slice(0, 2), ['paper-one', 'paper-one'])
+  assert.equal(releasedBySecondRequest, true)
+  assert.equal(report.rows[0]?.citationCountEstimate, 11)
+})
+
+test('waits for the default delay between papers without real-time sleep', async () => {
+  test.mock.timers.enable({ apis: ['setTimeout'] })
+  try {
+    globalThis.fetch = async (input) => String(input).includes('semanticscholar')
+      ? jsonResponse({ citationCount: 7 })
+      : jsonResponse({ cited_by_count: 11 })
+
+    const collection = collectCitationReport([
+      { id: 'paper-one', title: 'Paper One', arxivId: '1706.03762' },
+      { id: 'paper-two', title: 'Paper Two', arxivId: '1706.03763' }
+    ])
+
+    for (let i = 0; i < 10; i += 1) await Promise.resolve()
+    test.mock.timers.tick(1_100)
+    const report = await collection
+
+    assert.equal(report.rows.length, 2)
+  } finally {
+    test.mock.timers.reset()
+  }
 })
