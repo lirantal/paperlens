@@ -13,3 +13,4 @@
 | 2 | JSON/Markdown and persistence |
 | 3 | `blogUrl`/`publishedDate` and reference discovery |
 | 4 | LLM retrieval/share-of-voice |
+| 5 | Integrations and automation |

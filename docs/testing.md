@@ -10,3 +10,4 @@ pnpm install --frozen-lockfile
 pnpm run lint
 pnpm run build
 pnpm run test
+```
