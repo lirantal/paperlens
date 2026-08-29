@@ -4,6 +4,7 @@ import { fetchOpenAlexCitations } from '../src/providers/openAlex.js'
 import { fetchSemanticScholarCitations } from '../src/providers/semanticScholar.js'
 
 const originalFetch = globalThis.fetch
+const originalSetTimeout = globalThis.setTimeout
 
 const jsonResponse = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
@@ -13,6 +14,7 @@ const jsonResponse = (body: unknown, status = 200, headers: Record<string, strin
 
 afterEach(() => {
   globalThis.fetch = originalFetch
+  globalThis.setTimeout = originalSetTimeout
 })
 
 test('maps Semantic Scholar citationCount', async () => {
@@ -60,18 +62,42 @@ test('returns non-throwing errors for network failures', async () => {
   if (!openAlexResult.ok) assert.match(openAlexResult.error, /network unavailable/)
 })
 
-test('passes a timeout signal to each provider request', async () => {
-  const signals: AbortSignal[] = []
-  globalThis.fetch = async (_input, init) => {
-    assert.ok(init?.signal instanceof AbortSignal)
-    signals.push(init.signal)
-    return jsonResponse({ citationCount: 7, cited_by_count: 11 })
+test('returns non-throwing errors when timed-out requests abort', async () => {
+  globalThis.fetch = async (_input, init) => new Promise((_resolve, reject) => {
+    const signal = init?.signal
+    assert.ok(signal instanceof AbortSignal)
+    signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+  })
+
+  const [semanticScholarResult, openAlexResult] = await Promise.all([
+    fetchSemanticScholarCitations('1706.03762', { requestTimeoutMs: 1 }),
+    fetchOpenAlexCitations('1706.03762', { requestTimeoutMs: 1 })
+  ])
+
+  assert.equal(semanticScholarResult.ok, false)
+  assert.equal(openAlexResult.ok, false)
+})
+
+test('caps numeric Retry-After delays without waiting for the cap', async () => {
+  const delays: number[] = []
+  globalThis.setTimeout = ((callback, delay, ...args) => {
+    delays.push(Number(delay))
+    queueMicrotask(() => callback(...args))
+    return {} as ReturnType<typeof setTimeout>
+  }) as typeof setTimeout
+
+  let requests = 0
+  globalThis.fetch = async () => {
+    requests += 1
+    return requests === 1
+      ? jsonResponse({}, 429, { 'retry-after': '3600' })
+      : jsonResponse({ citationCount: 13 })
   }
 
-  await fetchSemanticScholarCitations('1706.03762', { requestTimeoutMs: 25 })
-  await fetchOpenAlexCitations('1706.03762', { requestTimeoutMs: 25 })
+  const result = await fetchSemanticScholarCitations('1706.03762')
 
-  assert.equal(signals.length, 2)
+  assert.equal(result.ok && result.citationCount, 13)
+  assert.deepEqual(delays, [4_000])
 })
 
 test('retries Semantic Scholar after a rate limit response', async () => {
@@ -87,6 +113,35 @@ test('retries Semantic Scholar after a rate limit response', async () => {
 
   assert.equal(result.ok && result.citationCount, 13)
   assert.equal(requests, 2)
+})
+
+test('retries Semantic Scholar after a server error response', async () => {
+  let requests = 0
+  globalThis.fetch = async () => {
+    requests += 1
+    return requests === 1
+      ? jsonResponse({}, 503, { 'retry-after': '0' })
+      : jsonResponse({ citationCount: 17 })
+  }
+
+  const result = await fetchSemanticScholarCitations('1706.03762')
+
+  assert.equal(result.ok && result.citationCount, 17)
+  assert.equal(requests, 2)
+})
+
+test('returns a Semantic Scholar error after the bounded retry count', async () => {
+  let requests = 0
+  globalThis.fetch = async () => {
+    requests += 1
+    return jsonResponse({}, 503, { 'retry-after': '0' })
+  }
+
+  const result = await fetchSemanticScholarCitations('1706.03762')
+
+  assert.equal(result.ok, false)
+  assert.equal(requests, 3)
+  if (!result.ok) assert.match(result.error, /503/)
 })
 
 test('sends optional provider API credentials in their documented locations', async () => {

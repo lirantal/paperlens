@@ -60,7 +60,7 @@ function isRetryableStatus (status: number): boolean {
 
 function retryDelayMs (retryAfter: string | null, attempt: number): number {
   const seconds = Number(retryAfter)
-  if (retryAfter !== null && Number.isFinite(seconds) && seconds >= 0) return seconds * 1_000
+  if (retryAfter !== null && Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1_000, maxRetryDelayMs)
   return Math.min(1_000 * 2 ** attempt, maxRetryDelayMs)
 }
 
