@@ -13,7 +13,7 @@ pnpm install
 Run the CLI against the example configuration:
 
 ```sh
-pnpm start -- --config paperlens.json
+pnpm start --config paperlens.json
 ```
 
 ## Commands
