@@ -43,6 +43,10 @@ keys are optional environment variables; when a provider cannot be reached,
 paperlens shows it as unavailable instead of reporting its citation count as
 zero.
 
+For reliable repeat use, configure the free OpenAlex and Semantic Scholar API
+keys in your environment. Do not add credentials to `paperlens.json`; see the
+[development guide](docs/development.md#provider-api-keys) for setup.
+
 See the [documentation](docs/README.md) for development, testing, architecture,
 and project conventions.
 
