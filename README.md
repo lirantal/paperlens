@@ -19,6 +19,9 @@
   <a href="./SECURITY.md"><img src="https://img.shields.io/badge/Security-Responsible%20Disclosure-yellow.svg" alt="Responsible Disclosure Policy" /></a>
 </p>
 
+<img width="1840" height="666" alt="image" src="https://github.com/user-attachments/assets/a74a04e5-6078-4f0c-8a98-d10628e1db9e" />
+
+
 ## Install
 
 ```sh
