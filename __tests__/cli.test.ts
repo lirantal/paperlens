@@ -85,7 +85,7 @@ test('loads an explicit config and writes the citation table', async () => {
     requests.push({ url: new URL(String(input)), headers: new Headers(init?.headers) })
     return String(input).includes('semanticscholar')
       ? jsonResponse({ citationCount: 7 })
-      : jsonResponse({ cited_by_count: 11 })
+      : jsonResponse({ results: [{ cited_by_count: 11 }] })
   }
 
   const exitCode = await runCli(['--config', configPath], {

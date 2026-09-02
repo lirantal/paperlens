@@ -25,12 +25,23 @@ test('maps Semantic Scholar citationCount', async () => {
   assert.equal(result.ok && result.citationCount, 7)
 })
 
-test('maps OpenAlex cited_by_count', async () => {
-  globalThis.fetch = async () => jsonResponse({ cited_by_count: 11 })
+test('maps OpenAlex cited_by_count from an arXiv landing-page lookup', async () => {
+  const requests: URL[] = []
+  globalThis.fetch = async (input) => {
+    requests.push(new URL(String(input)))
+    return jsonResponse({ results: [{ cited_by_count: 11 }] })
+  }
 
   const result = await fetchOpenAlexCitations('1706.03762')
 
   assert.equal(result.ok && result.citationCount, 11)
+  assert.equal(requests.length, 1)
+  assert.equal(requests[0]?.pathname, '/works')
+  assert.equal(
+    requests[0]?.searchParams.get('filter'),
+    'locations.landing_page_url:http://arxiv.org/abs/1706.03762'
+  )
+  assert.equal(requests[0]?.searchParams.get('per-page'), '1')
 })
 
 test('returns non-throwing errors for non-OK provider responses', async () => {
@@ -150,7 +161,7 @@ test('sends optional provider API credentials in their documented locations', as
     requests.push({ url: new URL(String(input)), headers: new Headers(init?.headers) })
     return String(input).includes('semanticscholar')
       ? jsonResponse({ citationCount: 7 })
-      : jsonResponse({ cited_by_count: 11 })
+      : jsonResponse({ results: [{ cited_by_count: 11 }] })
   }
 
   await fetchSemanticScholarCitations('1706.03762', { apiKey: 'semantic-key' })

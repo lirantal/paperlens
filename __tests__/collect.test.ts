@@ -19,7 +19,7 @@ test('keeps both provider counts and uses the conservative maximum', async () =>
     const url = String(input)
     return url.includes('semanticscholar')
       ? jsonResponse({ citationCount: 7 })
-      : jsonResponse({ cited_by_count: 11 })
+      : jsonResponse({ results: [{ cited_by_count: 11 }] })
   }
 
   const report = await collectCitationReport(
@@ -37,7 +37,7 @@ test('uses the successful provider count when the other provider fails', async (
     const url = String(input)
     return url.includes('semanticscholar')
       ? jsonResponse({}, 503, { 'retry-after': '0' })
-      : jsonResponse({ cited_by_count: 7 })
+      : jsonResponse({ results: [{ cited_by_count: 7 }] })
   }
 
   const report = await collectCitationReport(
@@ -110,7 +110,7 @@ test('starts both provider requests before either gated request is released', as
     clearTimeout(timeoutHandle)
     timeoutHandle = undefined
     releaseFirstRequest(jsonResponse({ citationCount: 7 }))
-    return jsonResponse({ cited_by_count: 11 })
+    return jsonResponse({ results: [{ cited_by_count: 11 }] })
   }
 
   const report = await collectCitationReport(
@@ -131,7 +131,7 @@ test('waits for the default delay between papers without real-time sleep', async
       if (url.includes('1706.03763')) secondPaperStarted = true
       return url.includes('semanticscholar')
         ? jsonResponse({ citationCount: 7 })
-        : jsonResponse({ cited_by_count: 11 })
+        : jsonResponse({ results: [{ cited_by_count: 11 }] })
     }
 
     const collection = collectCitationReport([
