@@ -2,8 +2,9 @@ import type { ProviderCitationResult } from '../types.js'
 
 const source = 'semanticScholar'
 const defaultRequestTimeoutMs = 10_000
-const maxAttempts = 3
-const maxRetryDelayMs = 4_000
+const maxAttempts = 6
+const maxRetryAfterDelayMs = 4_000
+const maxExponentialRetryDelayMs = 16_000
 
 type SemanticScholarOptions = {
   apiKey?: string
@@ -60,8 +61,12 @@ function isRetryableStatus (status: number): boolean {
 
 function retryDelayMs (retryAfter: string | null, attempt: number): number {
   const seconds = Number(retryAfter)
-  if (retryAfter !== null && Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1_000, maxRetryDelayMs)
-  return Math.min(1_000 * 2 ** attempt, maxRetryDelayMs)
+  if (retryAfter !== null && Number.isFinite(seconds) && seconds >= 0) {
+    return Math.min(seconds * 1_000, maxRetryAfterDelayMs)
+  }
+
+  const exponentialDelayMs = Math.min(1_000 * 2 ** attempt, maxExponentialRetryDelayMs)
+  return exponentialDelayMs * (0.5 + Math.random() * 0.5)
 }
 
 function wait (delayMs: number): Promise<void> {

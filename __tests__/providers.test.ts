@@ -5,6 +5,7 @@ import { fetchSemanticScholarCitations } from '../src/providers/semanticScholar.
 
 const originalFetch = globalThis.fetch
 const originalSetTimeout = globalThis.setTimeout
+const originalRandom = Math.random
 
 const jsonResponse = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
@@ -15,6 +16,7 @@ const jsonResponse = (body: unknown, status = 200, headers: Record<string, strin
 afterEach(() => {
   globalThis.fetch = originalFetch
   globalThis.setTimeout = originalSetTimeout
+  Math.random = originalRandom
 })
 
 test('maps Semantic Scholar citationCount', async () => {
@@ -111,6 +113,28 @@ test('caps numeric Retry-After delays without waiting for the cap', async () => 
   assert.deepEqual(delays, [4_000])
 })
 
+test('uses extended exponential backoff when Semantic Scholar omits Retry-After', async () => {
+  const delays: number[] = []
+  globalThis.setTimeout = ((callback, delay, ...args) => {
+    delays.push(Number(delay))
+    queueMicrotask(() => callback(...args))
+    return {} as ReturnType<typeof setTimeout>
+  }) as typeof setTimeout
+  Math.random = () => 1
+
+  let requests = 0
+  globalThis.fetch = async () => {
+    requests += 1
+    return requests === 6 ? jsonResponse({ citationCount: 13 }) : jsonResponse({}, 429)
+  }
+
+  const result = await fetchSemanticScholarCitations('1706.03762')
+
+  assert.equal(result.ok && result.citationCount, 13)
+  assert.equal(requests, 6)
+  assert.deepEqual(delays, [1_000, 2_000, 4_000, 8_000, 16_000])
+})
+
 test('retries Semantic Scholar after a rate limit response', async () => {
   let requests = 0
   globalThis.fetch = async () => {
@@ -151,7 +175,7 @@ test('returns a Semantic Scholar error after the bounded retry count', async () 
   const result = await fetchSemanticScholarCitations('1706.03762')
 
   assert.equal(result.ok, false)
-  assert.equal(requests, 3)
+  assert.equal(requests, 6)
   if (!result.ok) assert.match(result.error, /503/)
 })
 
