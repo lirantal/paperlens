@@ -1,0 +1,5 @@
+---
+'paperlens': patch
+---
+
+release
