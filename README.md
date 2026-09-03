@@ -22,26 +22,37 @@
 <img width="1840" height="666" alt="image" src="https://github.com/user-attachments/assets/a74a04e5-6078-4f0c-8a98-d10628e1db9e" />
 
 
-## Install
+## Quick start
 
 ```sh
-pnpm add paperlens
+npx paperlens
 ```
-## Usage: CLI
+
+Create a `paperlens.json` file in the current directory first:
+
+```json
+{
+  "papers": [
+    {
+      "id": "attention-is-all-you-need",
+      "title": "Attention Is All You Need",
+      "arxivId": "1706.03762"
+    }
+  ]
+}
+```
+
+`npx` downloads and runs the CLI without a global install.
+
+## Install globally (optional)
 
 ```sh
-pnpm exec paperlens --config paperlens.json
+npm install --global paperlens
+paperlens
 ```
 
-`pnpm exec` runs the `paperlens` binary after it has been installed as a local
-dependency. From a checkout of this repository, use:
-
-```sh
-pnpm start --config paperlens.json
-```
-
-Running either command without arguments reads `paperlens.json` from the
-current working directory. Use `-c` as an alias for `--config`. Provider API
+Both forms read `paperlens.json` from the current working directory. Use
+`--config <path>` (or `-c <path>`) to select a different file. Provider API
 keys are optional environment variables; when a provider cannot be reached,
 paperlens shows it as unavailable instead of reporting its citation count as
 zero.
@@ -50,8 +61,8 @@ For reliable repeat use, configure the free OpenAlex and Semantic Scholar API
 keys in your environment. Do not add credentials to `paperlens.json`; see the
 [development guide](docs/development.md#provider-api-keys) for setup.
 
-See the [documentation](docs/README.md) for development, testing, architecture,
-and project conventions.
+See the [documentation](docs/README.md) for local development, testing,
+architecture, and project conventions.
 
 ## Contributing
 
