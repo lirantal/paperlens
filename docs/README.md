@@ -4,6 +4,7 @@
 - [Testing](testing.md)
 - [Architecture](architecture.md)
 - [Conventions](conventions.md)
+- [Roadmap implementation notes](roadmap-implementation-notes.md)
 
 ## Roadmap
 
