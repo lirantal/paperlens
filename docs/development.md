@@ -49,3 +49,7 @@ pnpm run build
 pnpm run lint
 pnpm run test
 ```
+
+The release workflow installs its auxiliary npm version from `.npm-version`
+using `bash .github/scripts/setup-npm.sh`; update that pin under the same
+30-day release-age policy.
