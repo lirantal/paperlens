@@ -23,6 +23,15 @@ export default defineConfig([
   pluginN.configs['flat/recommended-script'],
   pluginSecurity.configs.recommended,
   {
+    files: ['**/*.ts'],
+    settings: {
+      n: {
+        // Source imports use emitted .js paths, even with allowImportingTsExtensions enabled.
+        typescriptExtensionMap: 'preserve'
+      }
+    }
+  },
+  {
     rules: {
       'n/no-process-exit': 'off',
       'n/no-unsupported-features': 'off',
