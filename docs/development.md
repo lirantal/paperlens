@@ -24,7 +24,7 @@ environment variables, never in the config file or a committed `.env` file.
 A one-off lookup can work without keys, but configure both providers for
 reliable repeat use:
 
-- `OPENALEX_API_KEY` — a free key from the [OpenAlex API settings](https://openalex.org/settings/api).
+- `OPENALEX_API_KEY` — a free key from the OpenAlex API settings (https://openalex.org/settings/api).
   OpenAlex permits basic keyless calls, but a key increases the daily budget and
   is appropriate for regular use. `OPENALEX_MAILTO` is optional contact
   information sent with the OpenAlex request; it does not replace an API key.
