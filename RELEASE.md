@@ -12,6 +12,18 @@ Use the command that matches the repository's package manager:
 This project uses the [Changesets](https://github.com/changesets/changesets)
 tool to manage semantic versioning and release notes.
 
+## Changelog formatting
+
+Changesets v3 detects the repository's `.prettierrc.json` and runs the local
+Prettier CLI when generating release changelogs. Keep Prettier declared in
+`devDependencies` and committed in `pnpm-lock.yaml`; a formatter configuration
+without its installed CLI causes `pnpm run version` to fail.
+
+`pnpm test` includes a release-version smoke check in a temporary fixture. It
+runs the real version script and formatter with a local changelog generator,
+checks the patch bump and generated changelog, and never publishes or requires
+GitHub/npm credentials. The working package version and changesets stay intact.
+
 ## Pre-requisites
 
 Permit GitHub Actions to create and approve pull requests:
