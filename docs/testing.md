@@ -14,3 +14,7 @@ pnpm run test
 
 Report tests cover versioned output, zero/unavailable semantics, safe diagnostics,
 Markdown escaping, and CLI stdout/stderr separation without live provider calls.
+
+Persistence tests use temporary directories, overlapping writers, filename
+collisions, and injected filesystem failures. They verify history preservation,
+latest replacement, partial-failure diagnostics, and owned-file cleanup.

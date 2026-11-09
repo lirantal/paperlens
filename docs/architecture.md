@@ -14,3 +14,8 @@ Versioned report conversion copies public fields and safe diagnostics without
 changing the collection API. JSON serialization and Markdown/table rendering are
 pure presentation steps after collection. See [report formats](reports.md) and
 [Phase 2 design](phase-2-design.md).
+
+Persistence is opt-in after document conversion. It takes an exclusive directory
+lock, commits an append-only history snapshot, then atomically replaces latest.
+It does not collect, render, calculate deltas, or invoke Git. Filesystem failure
+is fatal only when saving was requested; provider unavailability is non-fatal.
