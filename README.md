@@ -64,6 +64,12 @@ keys in your environment. Do not add credentials to `paperlens.json`; see the
 See the [documentation](docs/README.md) for local development, testing,
 architecture, and project conventions.
 
+## Report output
+
+Use `paperlens --json` for a versioned machine-readable report or
+`paperlens --markdown` for a portable Markdown table. Provider warnings stay on
+stderr. See [report formats](docs/reports.md) for the schema and library API.
+
 ## Contributing
 
 See [Contributing](CONTRIBUTING.md), [Release](RELEASE.md), and

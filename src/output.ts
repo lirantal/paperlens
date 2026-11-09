@@ -37,3 +37,28 @@ export function renderCitationTable(report: CitationReport): string {
     border(widths)
   ].join('\n')
 }
+
+const markdownCell = (value: string): string => value
+  .replace(unsafeCellCharacter, ' ')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/[\\`*_[\]{}()!#|~]/g, '\\$&')
+
+/** Render Markdown without collecting data or performing IO. */
+export function renderCitationMarkdown (report: CitationReport): string {
+  const rows = report.rows.map(row => [
+    row.paper.title,
+    row.paper.arxivId,
+    providerCount(row.semanticScholar),
+    providerCount(row.openAlex),
+    row.citationCountEstimate === null ? unavailable : String(row.citationCountEstimate)
+  ])
+  return [
+    `Generated at: ${markdownCell(report.generatedAt)}`,
+    '',
+    `| ${headers.join(' | ')} |`,
+    `| ${headers.map(() => '---').join(' | ')} |`,
+    ...rows.map(cells => `| ${cells.map(markdownCell).join(' | ')} |`)
+  ].join('\n')
+}

@@ -6,6 +6,9 @@
 - [Conventions](conventions.md)
 - [Roadmap implementation notes](roadmap-implementation-notes.md)
 
+- [Phase 2 design](phase-2-design.md)
+- [Report formats](reports.md)
+
 ## Roadmap
 
 | Phase | Scope |

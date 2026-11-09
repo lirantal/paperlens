@@ -33,3 +33,8 @@ export interface CollectCitationOptions {
   delayBetweenPapersMs?: number
   requestTimeoutMs?: number
 }
+
+/** Versioned public JSON contract, separate from the collection API. */
+export interface CitationReportDocument extends CitationReport {
+  schemaVersion: 1
+}

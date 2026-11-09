@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Paperlens citation report v1",
+  "description": "Provider counts are overlapping estimates, not additive. Unknown future properties may be ignored.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "rows"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "paper",
+          "semanticScholar",
+          "openAlex",
+          "citationCountEstimate"
+        ],
+        "properties": {
+          "paper": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "arxivId"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "arxivId": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "semanticScholar": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "source",
+                  "fetchedAt",
+                  "ok",
+                  "citationCount"
+                ],
+                "properties": {
+                  "source": {
+                    "const": "semanticScholar"
+                  },
+                  "fetchedAt": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+                  },
+                  "ok": {
+                    "const": true
+                  },
+                  "citationCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "source",
+                  "fetchedAt",
+                  "ok",
+                  "error"
+                ],
+                "properties": {
+                  "source": {
+                    "const": "semanticScholar"
+                  },
+                  "fetchedAt": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+                  },
+                  "ok": {
+                    "const": false
+                  },
+                  "error": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          },
+          "openAlex": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "source",
+                  "fetchedAt",
+                  "ok",
+                  "citationCount"
+                ],
+                "properties": {
+                  "source": {
+                    "const": "openAlex"
+                  },
+                  "fetchedAt": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+                  },
+                  "ok": {
+                    "const": true
+                  },
+                  "citationCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "source",
+                  "fetchedAt",
+                  "ok",
+                  "error"
+                ],
+                "properties": {
+                  "source": {
+                    "const": "openAlex"
+                  },
+                  "fetchedAt": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+                  },
+                  "ok": {
+                    "const": false
+                  },
+                  "error": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          },
+          "citationCountEstimate": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -209,3 +209,13 @@ test('returns a non-throwing error when a provider response is not JSON', async 
   assert.equal(result.ok, false)
   if (!result.ok) assert.match(result.error, /json/i)
 })
+
+for (const count of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+  test(`treats invalid count ${count} as unavailable instead of exporting an invalid report`, async () => {
+    globalThis.fetch = async input => String(input).includes('openalex')
+      ? jsonResponse({ results: [{ cited_by_count: count }] })
+      : jsonResponse({ citationCount: count })
+    assert.equal((await fetchSemanticScholarCitations('1706.03762')).ok, false)
+    assert.equal((await fetchOpenAlexCitations('1706.03762')).ok, false)
+  })
+}

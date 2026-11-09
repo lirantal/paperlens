@@ -28,7 +28,7 @@ export async function fetchOpenAlexCitations (
 
     const data = await response.json() as { results?: Array<{ cited_by_count?: unknown }> }
     const work = data.results?.[0]
-    if (typeof work?.cited_by_count !== 'number') {
+    if (typeof work?.cited_by_count !== 'number' || !Number.isSafeInteger(work.cited_by_count) || work.cited_by_count < 0) {
       return failure('OpenAlex response did not include a numeric cited_by_count')
     }
 

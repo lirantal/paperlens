@@ -37,7 +37,7 @@ export async function fetchSemanticScholarCitations (
       }
 
       const data = await response.json() as { citationCount?: unknown }
-      if (typeof data.citationCount !== 'number') {
+      if (typeof data.citationCount !== 'number' || !Number.isSafeInteger(data.citationCount) || data.citationCount < 0) {
         return failure('Semantic Scholar response did not include a numeric citationCount')
       }
 

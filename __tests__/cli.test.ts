@@ -60,7 +60,7 @@ test('prints help without reading config', async () => {
 test('rejects unknown options', async () => {
   const stderr: string[] = []
 
-  const exitCode = await runCli(['--json'], {
+  const exitCode = await runCli(['--unknown'], {
     stdout: () => {},
     stderr: (value) => stderr.push(value)
   })
@@ -136,3 +136,46 @@ test('reports unavailable providers without failing the collection', async () =>
   assert.match(stdout.join(''), /7/)
   assert.match(stderr.join(''), /paperlens: openAlex unavailable: OpenAlex request failed with HTTP 503/)
 })
+
+test('rejects conflicting report modes before config or collection', async () => {
+  const stderr: string[] = []
+  const exitCode = await runCli(['--json', '--markdown'], {
+    stdout: () => assert.fail('must not write stdout'),
+    stderr: value => stderr.push(value)
+  })
+  assert.equal(exitCode, 1)
+  assert.match(stderr.join(''), /mutually exclusive/)
+})
+
+for (const mode of ['--json', '--markdown']) {
+  test(`${mode} collects once, preserves zero/failure and keeps credentials out of output`, async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'paperlens-format-'))
+    const configPath = path.join(directory, 'papers.json')
+    await writeFile(configPath, JSON.stringify({ papers: [{ id: 'one', title: 'Paper One', arxivId: '1706.03762' }] }))
+    const stdout: string[] = []
+    const stderr: string[] = []
+    let requests = 0
+    globalThis.fetch = async input => {
+      requests++
+      if (String(input).includes('openalex')) throw new Error('https://api.openalex.org/?api_key=secret Authorization: Bearer secret')
+      return jsonResponse({ citationCount: 0 })
+    }
+    const code = await runCli([mode, '-c', configPath], {
+      stdout: value => stdout.push(value), stderr: value => stderr.push(value)
+    })
+    assert.equal(code, 0)
+    assert.equal(requests, 2)
+    assert.equal(stdout.length, 1)
+    assert.match(stderr.join(''), /openAlex unavailable/)
+    assert.doesNotMatch(stdout.join('') + stderr.join(''), /secret|Authorization|api_key/)
+    if (mode === '--json') {
+      const document = JSON.parse(stdout.join(''))
+      assert.equal(document.schemaVersion, 1)
+      assert.equal(document.rows[0].citationCountEstimate, 0)
+      assert.equal(document.rows[0].openAlex.ok, false)
+    } else {
+      assert.match(stdout.join(''), /Generated at:/)
+      assert.match(stdout.join(''), /\| 0 \| unavailable \| 0 \|/)
+    }
+  })
+}
