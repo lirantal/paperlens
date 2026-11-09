@@ -1,17 +1,19 @@
 import { parseArgs } from 'node:util'
+import { persistReportDocument } from './persist.js'
 import { collectCitationReport } from './collect.js'
 import { loadPaperlensConfig } from './config.js'
 import { createReportDocument, serializeReportDocument } from './report.js'
 import { renderCitationMarkdown, renderCitationTable } from './output.js'
 import type { ProviderCitationResult } from './types.js'
 
-const usage = `Usage: paperlens [--config <path>] [--json | --markdown]
+const usage = `Usage: paperlens [--config <path>] [--json | --markdown] [--output-dir <path>]
 
 Options:
-  -c, --config <path>  Read papers from a config file
-      --json           Print a versioned JSON report
-      --markdown       Print a Markdown report
-  -h, --help           Show this help message`
+  -c, --config <path>      Read papers from a config file
+      --output-dir <path>  Save latest.json and history snapshots
+      --json               Print a versioned JSON report
+      --markdown           Print a Markdown report
+  -h, --help               Show this help message`
 
 export interface CliIo {
   stdout: (text: string) => void
@@ -22,7 +24,7 @@ export async function runCli (
   args: readonly string[],
   io: CliIo = { stdout: console.log, stderr: console.error }
 ): Promise<number> {
-  let values: { config?: string, help?: boolean, json?: boolean, markdown?: boolean }
+  let values: { config?: string, help?: boolean, json?: boolean, markdown?: boolean, 'output-dir'?: string }
 
   try {
     ({ values } = parseArgs({
@@ -31,7 +33,8 @@ export async function runCli (
         config: { type: 'string', short: 'c' },
         help: { type: 'boolean', short: 'h' },
         json: { type: 'boolean' },
-        markdown: { type: 'boolean' }
+        markdown: { type: 'boolean' },
+        'output-dir': { type: 'string' }
       },
       strict: true,
       allowPositionals: false
@@ -43,6 +46,11 @@ export async function runCli (
 
   if (values.json && values.markdown) {
     io.stderr('paperlens: --json and --markdown are mutually exclusive')
+    return 1
+  }
+
+  if (values['output-dir'] !== undefined && !values['output-dir'].trim()) {
+    io.stderr('paperlens: --output-dir must not be empty')
     return 1
   }
 
@@ -59,6 +67,7 @@ export async function runCli (
       openAlexMailto: process.env.OPENALEX_MAILTO
     })
     const document = createReportDocument(report)
+    if (values['output-dir'] !== undefined) await persistReportDocument(document, values['output-dir'])
     io.stdout(values.json
       ? serializeReportDocument(document)
       : values.markdown ? renderCitationMarkdown(document) : renderCitationTable(document))
