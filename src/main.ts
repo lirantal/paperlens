@@ -1,4 +1,5 @@
 export { loadPaperlensConfig } from './config.js'
 export { collectCitationReport } from './collect.js'
-export { renderCitationTable } from './output.js'
+export { createReportDocument, serializeReportDocument } from './report.js'
+export { renderCitationMarkdown, renderCitationTable } from './output.js'
 export type * from './types.js'

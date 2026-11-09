@@ -19,14 +19,16 @@
         "default": "./dist/main.cjs"
       },
       "default": "./dist/main.mjs"
-    }
+    },
+    "./schemas/citation-report-v1.json": "./schemas/citation-report-v1.json"
   },
   "engines": {
     "node": ">=24.0.0",
     "pnpm": ">=10.26.0"
   },
   "files": [
-    "dist"
+    "dist",
+    "schemas"
   ],
   "scripts": {
     "start": "tsx src/bin/cli.ts",

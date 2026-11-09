@@ -11,3 +11,6 @@ pnpm run lint
 pnpm run build
 pnpm run test
 ```
+
+Report tests cover versioned output, zero/unavailable semantics, safe diagnostics,
+Markdown escaping, and CLI stdout/stderr separation without live provider calls.

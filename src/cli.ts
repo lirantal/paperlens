@@ -1,13 +1,16 @@
 import { parseArgs } from 'node:util'
 import { collectCitationReport } from './collect.js'
 import { loadPaperlensConfig } from './config.js'
-import { renderCitationTable } from './output.js'
+import { createReportDocument, serializeReportDocument } from './report.js'
+import { renderCitationMarkdown, renderCitationTable } from './output.js'
 import type { ProviderCitationResult } from './types.js'
 
-const usage = `Usage: paperlens [--config <path>]
+const usage = `Usage: paperlens [--config <path>] [--json | --markdown]
 
 Options:
   -c, --config <path>  Read papers from a config file
+      --json           Print a versioned JSON report
+      --markdown       Print a Markdown report
   -h, --help           Show this help message`
 
 export interface CliIo {
@@ -19,20 +22,27 @@ export async function runCli (
   args: readonly string[],
   io: CliIo = { stdout: console.log, stderr: console.error }
 ): Promise<number> {
-  let values: { config?: string, help?: boolean }
+  let values: { config?: string, help?: boolean, json?: boolean, markdown?: boolean }
 
   try {
     ({ values } = parseArgs({
       args: [...args],
       options: {
         config: { type: 'string', short: 'c' },
-        help: { type: 'boolean', short: 'h' }
+        help: { type: 'boolean', short: 'h' },
+        json: { type: 'boolean' },
+        markdown: { type: 'boolean' }
       },
       strict: true,
       allowPositionals: false
     }))
   } catch (error) {
     io.stderr(`paperlens: ${errorMessage(error)}`)
+    return 1
+  }
+
+  if (values.json && values.markdown) {
+    io.stderr('paperlens: --json and --markdown are mutually exclusive')
     return 1
   }
 
@@ -48,8 +58,11 @@ export async function runCli (
       openAlexApiKey: process.env.OPENALEX_API_KEY,
       openAlexMailto: process.env.OPENALEX_MAILTO
     })
-    io.stdout(renderCitationTable(report))
-    for (const row of report.rows) {
+    const document = createReportDocument(report)
+    io.stdout(values.json
+      ? serializeReportDocument(document)
+      : values.markdown ? renderCitationMarkdown(document) : renderCitationTable(document))
+    for (const row of document.rows) {
       warnIfUnavailable(row.semanticScholar, io)
       warnIfUnavailable(row.openAlex, io)
     }
