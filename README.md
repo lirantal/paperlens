@@ -68,7 +68,8 @@ architecture, and project conventions.
 
 Use `paperlens --json` for a versioned machine-readable report or
 `paperlens --markdown` for a portable Markdown table. Provider warnings stay on
-stderr. See [report formats](docs/reports.md) for the schema and library API.
+stderr. Add `--output-dir ./reports` to save `latest.json` and timestamped
+history snapshots. Saving is opt-in. See [report formats](docs/reports.md) for the schema and library API.
 
 ## Contributing
 

@@ -179,3 +179,62 @@ for (const mode of ['--json', '--markdown']) {
     }
   })
 }
+
+for (const flags of [[], ['--json'], ['--markdown']]) {
+  test(`persists reports independently of stdout format ${flags.join(' ')}`, async t => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'paperlens-save-'))
+    const { readdir, readFile, rm } = await import('node:fs/promises')
+    t.after(() => rm(directory, { recursive: true, force: true }))
+    const configPath = path.join(directory, 'papers.json')
+    await writeFile(configPath, JSON.stringify({ papers: [{ id: 'one', title: 'One', arxivId: '1706.03762' }] }))
+    globalThis.fetch = async input => String(input).includes('openalex')
+      ? jsonResponse({ results: [{ cited_by_count: 0 }] })
+      : jsonResponse({ citationCount: 7 })
+    const outputDirectory = path.join(directory, 'reports')
+    const stdout: string[] = []
+    const code = await runCli([...flags, '-c', configPath, '--output-dir', outputDirectory], {
+      stdout: value => stdout.push(value), stderr: () => assert.fail('unexpected diagnostic')
+    })
+    assert.equal(code, 0)
+    const latest = await readFile(path.join(outputDirectory, 'latest.json'), 'utf8')
+    assert.equal(JSON.parse(latest).rows[0].citationCountEstimate, 7)
+    const history = await readdir(path.join(outputDirectory, 'history'))
+    assert.equal(history.length, 1)
+    assert.equal(await readFile(path.join(outputDirectory, 'history', history[0]!), 'utf8'), latest)
+    if (flags.includes('--json')) assert.deepEqual(JSON.parse(stdout.join('')), JSON.parse(latest))
+  })
+}
+
+test('does not write files without output-dir and handles persistence errors with exit code 1', async t => {
+  const { readdir, rm } = await import('node:fs/promises')
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'paperlens-nosave-'))
+  const previousCwd = process.cwd()
+  process.chdir(directory)
+  t.after(async () => { process.chdir(previousCwd); await rm(directory, { recursive: true, force: true }) })
+  const configPath = path.join(directory, 'papers.json')
+  await writeFile(configPath, JSON.stringify({ papers: [{ id: 'one', title: 'One', arxivId: '1706.03762' }] }))
+  globalThis.fetch = async () => { throw new Error('network secret') }
+  const stderr: string[] = []
+  assert.equal(await runCli(['--json', '-c', configPath], {
+    stdout: () => {}, stderr: value => stderr.push(value)
+  }), 0)
+  assert.deepEqual(await readdir(directory), ['papers.json'])
+  assert.equal(await runCli(['--json', '-c', configPath, '--output-dir', './unavailable-reports'], {
+    stdout: value => {
+      const document = JSON.parse(value)
+      assert.equal(document.rows[0].citationCountEstimate, null)
+    }, stderr: value => stderr.push(value)
+  }), 0)
+  assert.ok((await readdir(path.join(directory, 'unavailable-reports'))).includes('latest.json'))
+  assert.equal(await runCli(['-c', configPath, '--output-dir', configPath], {
+    stdout: () => assert.fail('no stdout on failed persistence'), stderr: value => stderr.push(value)
+  }), 1)
+  assert.match(stderr.join(''), /Could not prepare report output directory/)
+  assert.doesNotMatch(stderr.join(''), /secret/)
+})
+
+test('rejects missing or empty output-dir before collection', async () => {
+  for (const flags of [['--output-dir'], ['--output-dir', ' ']]) {
+    assert.equal(await runCli(flags, { stdout: () => assert.fail(), stderr: () => {} }), 1)
+  }
+})
