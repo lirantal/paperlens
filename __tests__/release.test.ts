@@ -24,7 +24,8 @@ test('release version script generates a formatted changelog without publishing 
   t.after(() => rm(directory, { recursive: true, force: true }))
   const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
   await writeFile(path.join(directory, 'package.json'), JSON.stringify(manifest))
-  await symlink(path.join(root, 'node_modules'), path.join(directory, 'node_modules'), 'dir')
+  const nodeModulesLinkType = process.platform === 'win32' ? 'junction' : 'dir'
+  await symlink(path.join(root, 'node_modules'), path.join(directory, 'node_modules'), nodeModulesLinkType)
   await copyFile(path.join(root, '.prettierrc.json'), path.join(directory, '.prettierrc.json'))
   await copyFile(path.join(root, 'pnpm-workspace.yaml'), path.join(directory, 'pnpm-workspace.yaml'))
   await mkdir(path.join(directory, '.changeset'))
