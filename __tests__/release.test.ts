@@ -8,6 +8,17 @@ import { test } from 'node:test'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 
+const releaseSmokeEnvironment = () => {
+  const environment = { ...process.env }
+  const credentialKeys = new Set(['NODE_AUTH_TOKEN', 'GH_TOKEN', 'GITHUB_PAT', 'GITHUB_TOKEN', 'NPM_TOKEN'])
+  for (const key of Object.keys(environment)) {
+    if (credentialKeys.has(key) || /^npm_config_.*auth/i.test(key)) {
+      delete environment[key]
+    }
+  }
+  return environment
+}
+
 test('release version script generates a formatted changelog without publishing or credentials', async t => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'paperlens-release-'))
   t.after(() => rm(directory, { recursive: true, force: true }))
@@ -24,9 +35,7 @@ test('release version script generates a formatted changelog without publishing 
   await writeFile(path.join(directory, 'changelog.cjs'), 'module.exports = { getReleaseLine: async () => "A release smoke check.", getDependencyReleaseLine: async () => "" }\n')
   await writeFile(path.join(directory, '.changeset/smoke.md'), `---\n"${manifest.name}": patch\n---\n\nA release smoke check.\n`)
   // The version step needs no GitHub/npm credentials and must never publish.
-  const environment = { ...process.env }
-  delete environment.GITHUB_TOKEN
-  delete environment.NPM_TOKEN
+  const environment = releaseSmokeEnvironment()
   const result = spawnSync('pnpm', ['run', 'version'], {
     cwd: directory, env: environment, encoding: 'utf8', timeout: 30_000
   })
